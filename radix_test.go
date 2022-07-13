@@ -1,6 +1,9 @@
 package there
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 
 
@@ -8,21 +11,20 @@ func TestRadix(t *testing.T) {
 	r := New()
 
 	err, ok := r.Insert("foo", nil)
-
 	fail := ok && err != nil
 
 	if fail {
-		t.Fatalf("fail")
+		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 
 	err, ok = r.Insert("foo/bar/baz", nil)
 	if fail {
-		t.Fatalf("fail")
+		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 
 	err, ok = r.Insert("foo/baz/bar", nil)
 	if fail {
-		t.Fatalf("fail")
+		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 }
 
