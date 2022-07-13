@@ -57,14 +57,12 @@ func (n *node) findEdge(label byte) *node {
 
 	// Find the index of the matching edge label.
 	// If the value of "idx" equals the length of "num", a matching label was not found.
-	var idx int
-	for i := 0; i < num; i++ {
-		if n.edges[i].label >= label {
-			idx = i
+	idx := 0
+	for idx < num {
+		if n.edges[idx].label >= label {
 			break
 		}
-
-		idx = i
+		idx++
 	}
 
 	if idx < num && n.edges[idx].label == label {

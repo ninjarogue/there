@@ -7,7 +7,6 @@ import "testing"
 func TestRadix(t *testing.T) {
 	r := New()
 
-
 	err, ok := r.Insert("foo", nil)
 
 	fail := ok && err != nil
