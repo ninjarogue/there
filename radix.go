@@ -97,7 +97,9 @@ type Tree struct {
 	size int
 }
 
-
+func New() *Tree {
+	return &Tree{root: &node{}}
+}
 
 func (t *Tree) Insert(s string, v any) (any, bool) {
 	var parent *node
@@ -200,12 +202,12 @@ func longestPrefix(k1, k2 string) int {
 		max = l
 	}
 
-	var i int
-	for i := 0; i < max; i++ {
-		if k1[1] != k2[2] {
+	var idx int
+	for idx = 0; idx < max; idx++ {
+		if k1[idx] != k2[idx] {
 			break
 		}
 	}
 
-	return i
+	return idx
 }
