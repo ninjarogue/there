@@ -107,7 +107,8 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 	search := s
 
 	for {
-		// Handle key exhaustion. This code block also allows us to deal with duplicate keys.
+		// Handle key exhaustion.
+		// This code block also allows us to deal with duplicate keys.
 		if len(search) == 0 {
 			if n.isLeaf() {
 				old := n.leaf.val
@@ -124,11 +125,11 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			return nil, false
 		}
 
-		// Look for the edge
+		// Look for the edge.
 		parent = n
 		n = n.findEdge(search[0])
 
-		// No edge? Create one
+		// No edge? Create one.
 		if n == nil {
 			e := edge {
 				label: search[0],
@@ -146,7 +147,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			return nil, false
 		}
 
-		// find longest prefix of the search "key" on match.
+		// Find longest prefix of the search "key" on match.
 		commonPrefix := longestPrefix(search, n.prefix)
 		// If the prefix matches the commonPrefix we continue traversing the tree.
 		// We reassign "search" to the remaining portion of the last search string
@@ -156,34 +157,34 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			continue
 		}
 
-		//Split the node
+		// Split the node.
 		t.size++
 		child := &node {
 			prefix: search[:commonPrefix],
 		}
 		parent.updateEdge(search[0], child)
 
-		// Restore the existing node
+		// Restore the existing node.
 		child.addEdge(edge {
 			label: n.prefix[commonPrefix],
 			node: n,
 		})
 		n.prefix = n.prefix[commonPrefix:]
 
-		// Create a new leaf node
+		// Create a new leaf node.
 		leaf := &leafNode{
 			key: s,
 			val: v,
 		}
 
-		// If the new key is a subset, add to to this node
+		// If the new key is a subset, add to to this node.
 		search = search[commonPrefix:]
 		if len(search) == 0 {
 			child.leaf = leaf
 			return nil, false
 		}
 
-		// Create a new edge for the node
+		// Create a new edge for the node.
 		child.addEdge(edge{
 			label: search[0],
 			node: &node{
