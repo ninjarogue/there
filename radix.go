@@ -1,6 +1,9 @@
 package there
 
-import "sort"
+import (
+	"errors"
+	"sort"
+)
 
 
 
@@ -71,25 +74,23 @@ func (n *node) findEdge(label byte) *node {
 	return nil
 }
 
-func (n *node) updateEdge(label byte, node *node) {
+func (n *node) updateEdge(label byte, node *node) error {
 	num := len(n.edges)
 
-	var idx int
-	for i := 0; i < num; i++ {
-		if n.edges[i].label >= label {
-			idx = i
+	idx := 0
+	for idx < num {
+		if n.edges[idx].label >= label {
 			break
 		}
-
-		idx = i
+		idx++
 	}
 
 	if idx < num && n.edges[idx].label == label {
 		n.edges[idx].node = node
-		return
+		return nil
 	}
 
-	panic("replacing missing edge")
+	return errors.New("replacing missing edge")
 }
 
 type Tree struct {
@@ -162,7 +163,11 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		child := &node {
 			prefix: search[:commonPrefix],
 		}
-		parent.updateEdge(search[0], child)
+		err := parent.updateEdge(search[0], child)
+
+		if err != nil {
+			return err, false
+		}
 
 		// Restore the existing node.
 		child.addEdge(edge {
