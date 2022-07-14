@@ -240,11 +240,12 @@ func longestPrefix(k1, k2 string) int {
 		max = l
 	}
 
-	var idx int
-	for idx = 0; idx < max; idx++ {
+	idx := 0
+	for idx < max {
 		if k1[idx] != k2[idx] {
 			break
 		}
+		idx++
 	}
 
 	return idx
