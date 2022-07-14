@@ -37,8 +37,8 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'r',
 						node: &node{
 							leaf: &leafNode{
-								key: "foo/bar/baz",
-								val: nil,
+								path: "foo/bar/baz",
+								handler: nil,
 							},
 							prefix: "r/baz",
 						},
@@ -47,8 +47,8 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'z',
 						node: &node{
 							leaf: &leafNode{
-								key: "foo/baz/bar",
-								val: nil,
+								path: "foo/baz/bar",
+								handler: nil,
 							},
 							prefix: "z/bar",
 						},
@@ -60,8 +60,8 @@ func TestUpdateEdge(t *testing.T) {
 
 	parent := &node{
 		leaf: &leafNode{
-			key: "foo",
-			val: nil,
+			path: "foo",
+			handler: nil,
 		},
 		prefix: "foo",
 		edges:  edges,

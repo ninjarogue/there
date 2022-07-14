@@ -9,8 +9,8 @@ import (
 
 
 type leafNode struct {
-	key string
-	val any
+	path string
+	handler any
 }
 
 type edge struct {
@@ -111,14 +111,14 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		// This code block also allows us to deal with duplicate keys.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				old := n.leaf.val
-				n.leaf.val = v
+				old := n.leaf.handler
+				n.leaf.handler = v
 				return old, true
 			}
 
 			n.leaf = &leafNode{
-				key: s,
-				val: v,
+				path: s,
+				handler: v,
 			}
 
 			t.size++
@@ -135,8 +135,8 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 				label: search[0],
 				node: &node{
 					leaf: &leafNode{
-						key: s,
-						val: v,
+						path: s,
+						handler: v,
 					},
 					prefix: search,
 				},
@@ -177,8 +177,8 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 
 		// Create a new leaf node.
 		leaf := &leafNode{
-			key: s,
-			val: v,
+			path: s,
+			handler: v,
 		}
 
 		// If the new key is a subset, add to to this node.
@@ -211,7 +211,7 @@ func (t *Tree) Get(s string) (any, bool) {
 		// Handle key exhaustion.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				return n.leaf.val, true
+				return n.leaf.handler, true
 			}
 			break
 		}
