@@ -3,6 +3,7 @@ package there
 import (
 	"errors"
 	"sort"
+	"strings"
 )
 
 
@@ -152,7 +153,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		// We reassign "search" to the remaining portion of the last search string
 		// to continue searching for a place to insert.
 		if commonPrefix == len(n.prefix) {
-			search = search[commonPrefix:] // NOTE: This statement could possibly exhaust the search key
+			search = search[commonPrefix:] // We exhaust/consume the search key.
 			continue
 		}
 
@@ -198,6 +199,39 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 
 		return nil, false
 	}
+}
+
+// Get is used to lookup a specific key
+// returning the value if it was found.
+func (t *Tree) Get(s string) (any, bool) {
+	n := t.root
+	search := s
+
+	for {
+		// Handle key exhaustion.
+		if len(search) == 0 {
+			if n.isLeaf() {
+				return n.leaf.val, true
+			}
+			break
+		}
+
+		// Look for an edge
+		n = n.findEdge(search[0])
+		if n == nil {
+			break
+		}
+
+		// If we find a match, we truncate
+		// the matching slice and continue the search.
+		if strings.HasPrefix(search, n.prefix) {
+			search = search[len(n.prefix):] // We exhaust/consume the search key.
+		} else {
+			break
+		}
+	}
+
+	return nil, false
 }
 
 func longestPrefix(k1, k2 string) int {

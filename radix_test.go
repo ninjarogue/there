@@ -5,8 +5,6 @@ import (
 	"testing"
 )
 
-
-
 func TestRadix(t *testing.T) {
 	r := New()
 
@@ -66,15 +64,39 @@ func TestUpdateEdge(t *testing.T) {
 			val: nil,
 		},
 		prefix: "foo",
-		edges: edges,
+		edges:  edges,
 	}
 
-	child := &node {
+	child := &node{
 		prefix: "/b",
 	}
 
 	err := parent.updateEdge('/', child)
 	if err != nil {
+		t.Fatalf("fail")
+	}
+}
+
+func TestGet(t *testing.T) {
+	r := New()
+
+	dummyHandler := func() {}
+	r.Insert("/foo", dummyHandler)
+	r.Insert("/foo/bar/baz", dummyHandler)
+	r.Insert("/foo/baz/bar", dummyHandler)
+
+	val, _ := r.Get("/foo")
+	if val == nil {
+		t.Fatalf("fail")
+	}
+
+	val, _ = r.Get("/foo/bar/baz")
+	if val == nil {
+		t.Fatalf("fail")
+	}
+
+	val, _ = r.Get("/foo/baz/bar")
+	if val == nil {
 		t.Fatalf("fail")
 	}
 }
