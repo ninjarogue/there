@@ -148,7 +148,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		}
 
 		// Find longest prefix of the search "key" on match.
-		commonPrefix := longestPrefix(search, n.prefix)
+		commonPrefix := longestCommonPrefix(search, n.prefix)
 		// If the prefix matches the commonPrefix we continue traversing the tree.
 		// We reassign "search" to the remaining portion of the last search string
 		// to continue searching for a place to insert.
@@ -234,7 +234,7 @@ func (t *Tree) Get(s string) (any, bool) {
 	return nil, false
 }
 
-func longestPrefix(k1, k2 string) int {
+func longestCommonPrefix(k1, k2 string) int {
 	max := len(k1)
 	if l := len(k2); l < max {
 		max = l
