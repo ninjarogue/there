@@ -5,25 +5,21 @@ import (
 	"testing"
 )
 
-
-
 func TestRadix(t *testing.T) {
 	r := New()
 
-	err, ok := r.Insert("foo", nil)
-	fail := ok && err != nil
-
-	if fail {
+	_, err := r.Insert("foo", nil)
+	if err != nil {
 		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 
-	err, ok = r.Insert("foo/bar/baz", nil)
-	if fail {
+	_, err = r.Insert("foo/bar/baz", nil)
+	if err != nil {
 		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 
-	err, ok = r.Insert("foo/baz/bar", nil)
-	if fail {
+	_, err = r.Insert("foo/baz/bar", nil)
+	if err != nil {
 		t.Fatalf(fmt.Sprintf("%v", err))
 	}
 }
@@ -39,8 +35,8 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'r',
 						node: &node{
 							leaf: &leafNode{
-								key: "foo/bar/baz",
-								val: nil,
+								path: "foo/bar/baz",
+								handler: nil,
 							},
 							prefix: "r/baz",
 						},
@@ -49,8 +45,8 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'z',
 						node: &node{
 							leaf: &leafNode{
-								key: "foo/baz/bar",
-								val: nil,
+								path: "foo/baz/bar",
+								handler: nil,
 							},
 							prefix: "z/bar",
 						},
@@ -62,19 +58,43 @@ func TestUpdateEdge(t *testing.T) {
 
 	parent := &node{
 		leaf: &leafNode{
-			key: "foo",
-			val: nil,
+			path: "foo",
+			handler: nil,
 		},
 		prefix: "foo",
-		edges: edges,
+		edges:  edges,
 	}
 
-	child := &node {
+	child := &node{
 		prefix: "/b",
 	}
 
 	err := parent.updateEdge('/', child)
 	if err != nil {
+		t.Fatalf("fail")
+	}
+}
+
+func TestGet(t *testing.T) {
+	r := New()
+
+	dummyHandler := func() {}
+	r.Insert("/foo", dummyHandler)
+	r.Insert("/foo/bar/baz", dummyHandler)
+	r.Insert("/foo/baz/bar", dummyHandler)
+
+	val, _ := r.Get("/foo")
+	if val == nil {
+		t.Fatalf("fail")
+	}
+
+	val, _ = r.Get("/foo/bar/baz")
+	if val == nil {
+		t.Fatalf("fail")
+	}
+
+	val, _ = r.Get("/foo/baz/bar")
+	if val == nil {
 		t.Fatalf("fail")
 	}
 }

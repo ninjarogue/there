@@ -2,16 +2,15 @@ package there
 
 import (
 	"errors"
-	"fmt"
-	"log"
 	"sort"
+	"strings"
 )
 
 
 
 type leafNode struct {
-	key string
-	val any
+	path string
+	handler any
 }
 
 type edge struct {
@@ -137,14 +136,14 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 		// This code block also allows us to deal with duplicate keys.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				old := n.leaf.val
-				n.leaf.val = v
+				old := n.leaf.handler
+				n.leaf.handler = v
 				return old, nil
 			}
 
 			n.leaf = &leafNode{
-				key: s,
-				val: v,
+				path: s,
+				handler: v,
 			}
 
 			t.size++
@@ -161,8 +160,8 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 				label: search[0],
 				node: &node{
 					leaf: &leafNode{
-						key: s,
-						val: v,
+						path: s,
+						handler: v,
 					},
 					prefix: search,
 				},
@@ -174,12 +173,12 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 		}
 
 		// Find longest prefix of the search "key" on match.
-		commonPrefix := longestPrefix(search, n.prefix)
+		commonPrefix := longestCommonPrefix(search, n.prefix)
 		// If the prefix matches the commonPrefix we continue traversing the tree.
 		// We reassign "search" to the remaining portion of the last search string
 		// to continue searching for a place to insert.
 		if commonPrefix == len(n.prefix) {
-			search = search[commonPrefix:] // NOTE: This statement could possibly exhaust the search key
+			search = search[commonPrefix:] // We exhaust/consume the search key.
 			continue
 		}
 
@@ -203,8 +202,8 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 
 		// Create a new leaf node.
 		leaf := &leafNode{
-			key: s,
-			val: v,
+			path: s,
+			handler: v,
 		}
 
 		// If the new key is a subset, add to to this node.
@@ -227,17 +226,51 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 	}
 }
 
-func longestPrefix(k1, k2 string) int {
+// Get is used to lookup a specific key
+// returning the value if it was found.
+func (t *Tree) Get(s string) (any, bool) {
+	n := t.root
+	search := s
+
+	for {
+		// Handle key exhaustion.
+		if len(search) == 0 {
+			if n.isLeaf() {
+				return n.leaf.handler, true
+			}
+			break
+		}
+
+		// Look for an edge
+		n = n.findEdge(search[0])
+		if n == nil {
+			break
+		}
+
+		// If we find a match, we truncate
+		// the matching slice and continue the search.
+		if strings.HasPrefix(search, n.prefix) {
+			search = search[len(n.prefix):] // We exhaust/consume the search key.
+		} else {
+			break
+		}
+	}
+
+	return nil, false
+}
+
+func longestCommonPrefix(k1, k2 string) int {
 	max := len(k1)
 	if l := len(k2); l < max {
 		max = l
 	}
 
-	var idx int
-	for idx = 0; idx < max; idx++ {
+	idx := 0
+	for idx < max {
 		if k1[idx] != k2[idx] {
 			break
 		}
+		idx++
 	}
 
 	return idx
