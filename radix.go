@@ -178,7 +178,7 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 		// We reassign "search" to the remaining portion of the last search string
 		// to continue searching for a place to insert.
 		if commonPrefix == len(n.prefix) {
-			search = search[commonPrefix:] // We exhaust/consume the search key.
+			search = search[commonPrefix:]
 			continue
 		}
 
@@ -250,7 +250,8 @@ func (t *Tree) Get(s string) (any, bool) {
 		// If we find a match, we truncate
 		// the matching slice and continue the search.
 		if strings.HasPrefix(search, n.prefix) {
-			search = search[len(n.prefix):] // We exhaust/consume the search key.
+			// We exhaust the search key.
+			search = search[len(n.prefix):]
 		} else {
 			break
 		}
