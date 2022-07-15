@@ -4,6 +4,7 @@ import (
 	"net/http"
 )
 
+// TODO: Debug ServeHTTP (Parse request URL path)
 func (router *Router) ServeHTTP(rw http.ResponseWriter, request *http.Request) {
 
 	httpRequest := NewHttpRequest(rw, request)
@@ -12,8 +13,14 @@ func (router *Router) ServeHTTP(rw http.ResponseWriter, request *http.Request) {
 
 	var endpoint Endpoint = nil
 
+	// We find the correct method tree.
+
+	// We fetch the route.
+
+	// We get the routeParams (if any), endpoint, and middlewares.
+
 	for _, current := range router.routes {
-		routeParams, ok := current.Path.Parse(request.URL.Path)
+		routeParams, ok := current.Path.Parse(request.URL.Path) // TODO: Do we need to refactor Parse?
 		if ok && CheckArrayContains(current.Methods, request.Method) {
 			endpoint = current.Endpoint
 			middlewares = append(middlewares, current.Middlewares...)
