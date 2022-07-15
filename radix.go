@@ -2,6 +2,8 @@ package there
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"sort"
 )
 
@@ -92,6 +94,7 @@ func (n *node) updateEdge(label byte, node *node) error {
 }
 
 type Tree struct {
+	method string
 	root *node
 	size int
 }
@@ -100,7 +103,31 @@ func New() *Tree {
 	return &Tree{root: &node{}}
 }
 
-func (t *Tree) Insert(s string, v any) (any, bool) {
+func (t *Tree) GET(s string, v any) (*Tree, error) {
+	t.method = "GET"
+	// Insert key and return method tree.
+	_, err := t.Insert(s, v)
+
+	if err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+func (t *Tree) POST(s string, v any) (*Tree, error) {
+	t.method = "POST"
+	// Insert key and return method tree.
+	_, err := t.Insert(s, v)
+
+	if err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+func (t *Tree) Insert(s string, v any) (any, error) {
 	var parent *node
 	n := t.root
 	search := s
@@ -112,7 +139,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			if n.isLeaf() {
 				old := n.leaf.val
 				n.leaf.val = v
-				return old, true
+				return old, nil
 			}
 
 			n.leaf = &leafNode{
@@ -121,7 +148,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			}
 
 			t.size++
-			return nil, false
+			return nil, nil
 		}
 
 		// Look for the edge.
@@ -143,7 +170,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 
 			parent.addEdge(e)
 			t.size++
-			return nil, false
+			return nil, nil
 		}
 
 		// Find longest prefix of the search "key" on match.
@@ -164,7 +191,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		err := parent.updateEdge(search[0], child)
 
 		if err != nil {
-			return err, false
+			return nil, err
 		}
 
 		// Restore the existing node.
@@ -184,7 +211,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 		search = search[commonPrefix:]
 		if len(search) == 0 {
 			child.leaf = leaf
-			return nil, false
+			return nil, nil
 		}
 
 		// Create a new edge for the node.
@@ -196,7 +223,7 @@ func (t *Tree) Insert(s string, v any) (any, bool) {
 			},
 		})
 
-		return nil, false
+		return nil, nil
 	}
 }
 
