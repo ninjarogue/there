@@ -99,7 +99,6 @@ func (p Path) Parse(route string) (map[string]string, bool) {
 		a := p.parts[i]
 		b := split[i]
 		if a.variable {
-			// TODO: Debug the value.
 			params[a.value] = b
 		} else {
 			if (ignoreCase && strings.ToLower(a.value) != strings.ToLower(b)) ||

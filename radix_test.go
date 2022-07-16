@@ -35,8 +35,14 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'r',
 						node: &node{
 							leaf: &leafNode{
-								path: "foo/bar/baz",
-								handler: nil,
+								Path: Path{
+									parts: []pathPart{
+										{value: "foo", variable: false,},
+										{value: "bar", variable: false,},
+										{value: "baz", variable: false,},
+									},
+									ignoreCase: false,
+								},
 							},
 							prefix: "r/baz",
 						},
@@ -45,8 +51,14 @@ func TestUpdateEdge(t *testing.T) {
 						label: 'z',
 						node: &node{
 							leaf: &leafNode{
-								path: "foo/baz/bar",
-								handler: nil,
+								Path: Path{
+									parts: []pathPart{
+										{value: "foo", variable: false,},
+										{value: "baz", variable: false,},
+										{value: "bar", variable: false,},
+									},
+									ignoreCase: false,
+								},
 							},
 							prefix: "z/bar",
 						},
@@ -58,8 +70,12 @@ func TestUpdateEdge(t *testing.T) {
 
 	parent := &node{
 		leaf: &leafNode{
-			path: "foo",
-			handler: nil,
+			Path: Path{
+				parts: []pathPart{
+					{value: "foo", variable: false,},
+				},
+				ignoreCase: false,
+			},
 		},
 		prefix: "foo",
 		edges:  edges,
@@ -78,7 +94,7 @@ func TestUpdateEdge(t *testing.T) {
 func TestGet(t *testing.T) {
 	r := New()
 
-	dummyHandler := func() {}
+	dummyHandler := func(r Request) Response { return nil }
 	r.Insert("/foo", dummyHandler)
 	r.Insert("/foo/bar/baz", dummyHandler)
 	r.Insert("/foo/baz/bar", dummyHandler)

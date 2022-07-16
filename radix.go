@@ -2,15 +2,16 @@ package there
 
 import (
 	"errors"
+	"log"
 	"sort"
 	"strings"
 )
 
-
-
 type leafNode struct {
-	path string
-	handler any
+	key string
+	Path Path
+	middlewares []Middleware
+	endpoint Endpoint
 }
 
 type edge struct {
@@ -39,6 +40,7 @@ func (e edges) Sort() {
 type node struct {
 	leaf *leafNode
 	prefix string
+	variable bool
 	edges edges
 }
 
@@ -92,20 +94,20 @@ func (n *node) updateEdge(label byte, node *node) error {
 	return errors.New("replacing missing edge")
 }
 
-type Tree struct {
+type MethodTree struct {
 	method string
 	root *node
 	size int
 }
 
-func New() *Tree {
-	return &Tree{root: &node{}}
+func New() *MethodTree {
+	return &MethodTree{root: &node{}}
 }
 
-func (t *Tree) GET(s string, v any) (*Tree, error) {
+func (t *MethodTree) GET(s string, ep Endpoint) (*MethodTree, error) {
 	t.method = "GET"
 	// Insert key and return method tree.
-	_, err := t.Insert(s, v)
+	_, err := t.Insert(s, ep)
 
 	if err != nil {
 		return t, err
@@ -114,10 +116,10 @@ func (t *Tree) GET(s string, v any) (*Tree, error) {
 	return t, nil
 }
 
-func (t *Tree) POST(s string, v any) (*Tree, error) {
+func (t *MethodTree) POST(s string, ep Endpoint) (*MethodTree, error) {
 	t.method = "POST"
 	// Insert key and return method tree.
-	_, err := t.Insert(s, v)
+	_, err := t.Insert(s, ep)
 
 	if err != nil {
 		return t, err
@@ -126,7 +128,7 @@ func (t *Tree) POST(s string, v any) (*Tree, error) {
 	return t, nil
 }
 
-func (t *Tree) Insert(s string, v any) (any, error) {
+func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
 	var parent *node
 	n := t.root
 	search := s
@@ -136,14 +138,14 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 		// This code block also allows us to deal with duplicate keys.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				old := n.leaf.handler
-				n.leaf.handler = v
+				old := n.leaf.endpoint
+				n.leaf.endpoint = ep
 				return old, nil
 			}
 
 			n.leaf = &leafNode{
-				path: s,
-				handler: v,
+				key: s,
+				endpoint: ep,
 			}
 
 			t.size++
@@ -160,8 +162,8 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 				label: search[0],
 				node: &node{
 					leaf: &leafNode{
-						path: s,
-						handler: v,
+						key: s,
+						endpoint: ep,
 					},
 					prefix: search,
 				},
@@ -187,6 +189,9 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 		child := &node {
 			prefix: search[:commonPrefix],
 		}
+		if strings.HasPrefix(search[:commonPrefix], ":") {
+			child.variable = true
+		}
 		err := parent.updateEdge(search[0], child)
 
 		if err != nil {
@@ -202,8 +207,8 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 
 		// Create a new leaf node.
 		leaf := &leafNode{
-			path: s,
-			handler: v,
+			key: s,
+			endpoint: ep,
 		}
 
 		// If the new key is a subset, add to to this node.
@@ -228,7 +233,7 @@ func (t *Tree) Insert(s string, v any) (any, error) {
 
 // Get is used to lookup a specific key
 // returning the value if it was found.
-func (t *Tree) Get(s string) (any, bool) {
+func (t *MethodTree) Get(s string) (Endpoint, bool) {
 	n := t.root
 	search := s
 
@@ -236,7 +241,7 @@ func (t *Tree) Get(s string) (any, bool) {
 		// Handle key exhaustion.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				return n.leaf.handler, true
+				return n.leaf.endpoint, true
 			}
 			break
 		}
@@ -247,10 +252,16 @@ func (t *Tree) Get(s string) (any, bool) {
 			break
 		}
 
+		// Check to see if the current route segment is a variable
+		if n.variable {
+			log.Printf("%v", n.leaf.key)
+			// TODO: ...
+		}
+
 		// If we find a match, we truncate
 		// the matching slice and continue the search.
 		if strings.HasPrefix(search, n.prefix) {
-			// We exhaust the search key.
+			// Consume the search key.
 			search = search[len(n.prefix):]
 		} else {
 			break
@@ -258,6 +269,34 @@ func (t *Tree) Get(s string) (any, bool) {
 	}
 
 	return nil, false
+}
+
+// TODO: Use the original Parse method.
+func Parse(p Path, route string) (map[string]string, bool) {
+	params := map[string]string{}
+
+	split := splitUrl(route)
+
+	if len(split) != len(p.parts) {
+		return nil, false
+	}
+
+	ignoreCase := p.ignoreCase
+
+	for i := 0; i < len(p.parts); i++ {
+		a := p.parts[i]
+		b := split[i]
+		if a.variable {
+			params[a.value] = b
+		} else {
+			if (ignoreCase && strings.ToLower(a.value) != strings.ToLower(b)) ||
+				(!ignoreCase && a.value != b) {
+				return nil, false
+			}
+		}
+	}
+
+	return params, true
 }
 
 func longestCommonPrefix(k1, k2 string) int {

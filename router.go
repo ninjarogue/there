@@ -18,6 +18,7 @@ type Router struct {
 	//routes is a list of Routes which checks for duplicate entries
 	//on insert.
 	routes routeManager
+	methodTrees []MethodTree
 }
 
 func NewRouter() *Router {
