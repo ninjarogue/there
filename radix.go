@@ -106,7 +106,7 @@ func New() *MethodTree {
 
 func (t *MethodTree) GET(s string, ep Endpoint) (*MethodTree, error) {
 	t.method = "GET"
-	// Insert key and return method tree.
+
 	_, err := t.Insert(s, ep)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func (t *MethodTree) GET(s string, ep Endpoint) (*MethodTree, error) {
 
 func (t *MethodTree) POST(s string, ep Endpoint) (*MethodTree, error) {
 	t.method = "POST"
-	// Insert key and return method tree.
+
 	_, err := t.Insert(s, ep)
 
 	if err != nil {
