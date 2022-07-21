@@ -17,14 +17,15 @@ type Router struct {
 
 	//routes is a list of Routes which checks for duplicate entries
 	//on insert.
+	// TODO: Deprecate routes field.
 	routes routeManager
-	methodTrees []MethodTree
+	base Base
 }
 
 func NewRouter() *Router {
 	r := &Router{
 		globalMiddlewares: make([]Middleware, 0),
-		routes:            make([]*Route, 0),
+		base:              Base{methodTrees: make(map[string]methodTree)},
 		Server:            &http.Server{},
 		Configuration: &RouterConfiguration{
 			RouteNotFoundHandler: func(request Request) Response {
