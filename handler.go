@@ -1,7 +1,6 @@
 package there
 
 import (
-	"log"
 	"net/http"
 )
 
@@ -13,30 +12,13 @@ func (router *Router) ServeHTTP(rw http.ResponseWriter, request *http.Request) {
 
 	var endpoint Endpoint = nil
 
-	// We find the correct method tree.
-	var tr MethodTree
-	for _, tree := range router.methodTrees {
-		if tree.method == request.Method {
-			tr = tree
-		}
-	}
+	// We fetch the route along with the routeParams (if any).
+	r, routeParams, _ := router.base.LookUp(request.Method, request.URL.Path)
 
-	// We fetch the route.
-	ep, _ := tr.Get(request.URL.Path)
-	log.Printf("%v", ep)
-
-	// We get the routeParams (if any), endpoint, and middlewares.
-
-	// for _, current := range router.routes {
-	// 	routeParams, ok := current.Path.Parse(request.URL.Path)
-	// 	if ok && CheckArrayContains(current.Methods, request.Method) {
-	// 		endpoint = current.Endpoint
-	// 		middlewares = append(middlewares, current.Middlewares...)
-	// 		routeParamReader := RouteParamReader(routeParams)
-	// 		httpRequest.RouteParams = &routeParamReader
-	// 		break
-	// 	}
-	// }
+	endpoint = r.endpoint
+	middlewares = append(middlewares, r.middlewares...)
+	routeParamReader := RouteParamReader(routeParams)
+	httpRequest.RouteParams = &routeParamReader
 
 	if endpoint == nil {
 		endpoint = router.Configuration.RouteNotFoundHandler
