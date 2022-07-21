@@ -345,6 +345,7 @@ func TestEmptyResponse(t *testing.T) {
 	}
 }
 
+// TODO: Run this test.
 func TestRedirectResponse(t *testing.T) {
 	router := CreateRouter()
 
@@ -353,11 +354,13 @@ func TestRedirectResponse(t *testing.T) {
 
 	router.ServeHTTP(recorder, request)
 
-	// result := recorder.Result()
+	header := recorder.Header()
 
-	// TODO FIX ASSERT
-	// assert.Equal(t, "https://google.com", result.Headers.Get("Location"))
-
+	got := header.Get("Location")
+	want := "https://google.com"
+	if got != want {
+		t.Errorf("%v != %v", want, got)
+	}
 }
 
 func readStringBody(router *Router, t *testing.T, method, route string, body io.Reader) string {
