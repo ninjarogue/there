@@ -1,27 +1,17 @@
 package there
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestRadix(t *testing.T) {
-	r := New()
+	r := NewRouter()
 
-	_, err := r.Insert("foo", nil)
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("%v", err))
-	}
+	r.GET("foo", nil)
+	r.GET("foo/bar/baz", nil)
+	r.GET("foo/baz/bar", nil)
 
-	_, err = r.Insert("foo/bar/baz", nil)
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("%v", err))
-	}
-
-	_, err = r.Insert("foo/baz/bar", nil)
-	if err != nil {
-		t.Fatalf(fmt.Sprintf("%v", err))
-	}
+	// TODO: Test "r".
 }
 
 func TestUpdateEdge(t *testing.T) {
@@ -34,12 +24,12 @@ func TestUpdateEdge(t *testing.T) {
 					{
 						label: 'r',
 						node: &node{
-							leaf: &leafNode{
+							leaf: &route{
 								Path: Path{
 									parts: []pathPart{
-										{value: "foo", variable: false,},
-										{value: "bar", variable: false,},
-										{value: "baz", variable: false,},
+										{value: "foo", variable: false},
+										{value: "bar", variable: false},
+										{value: "baz", variable: false},
 									},
 									ignoreCase: false,
 								},
@@ -50,12 +40,12 @@ func TestUpdateEdge(t *testing.T) {
 					{
 						label: 'z',
 						node: &node{
-							leaf: &leafNode{
+							leaf: &route{
 								Path: Path{
 									parts: []pathPart{
-										{value: "foo", variable: false,},
-										{value: "baz", variable: false,},
-										{value: "bar", variable: false,},
+										{value: "foo", variable: false},
+										{value: "baz", variable: false},
+										{value: "bar", variable: false},
 									},
 									ignoreCase: false,
 								},
@@ -69,10 +59,10 @@ func TestUpdateEdge(t *testing.T) {
 	}
 
 	parent := &node{
-		leaf: &leafNode{
+		leaf: &route{
 			Path: Path{
 				parts: []pathPart{
-					{value: "foo", variable: false,},
+					{value: "foo", variable: false},
 				},
 				ignoreCase: false,
 			},
@@ -92,24 +82,24 @@ func TestUpdateEdge(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	r := New()
+	r := NewRouter()
 
 	dummyHandler := func(r Request) Response { return nil }
-	r.Insert("/foo", dummyHandler)
-	r.Insert("/foo/bar/baz", dummyHandler)
-	r.Insert("/foo/baz/bar", dummyHandler)
+	r.GET("/foo", dummyHandler)
+	r.GET("/foo/bar/baz", dummyHandler)
+	r.GET("/foo/baz/bar", dummyHandler)
 
-	val, _ := r.Get("/foo")
+	val, _, _ := r.base.LookUp("GET", "/foo")
 	if val == nil {
 		t.Fatalf("fail")
 	}
 
-	val, _ = r.Get("/foo/bar/baz")
+	val, _, _ = r.base.LookUp("GET", "/foo/bar/baz")
 	if val == nil {
 		t.Fatalf("fail")
 	}
 
-	val, _ = r.Get("/foo/baz/bar")
+	val, _, _ = r.base.LookUp("GET", "/foo/baz/bar")
 	if val == nil {
 		t.Fatalf("fail")
 	}

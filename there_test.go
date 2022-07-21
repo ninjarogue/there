@@ -1217,6 +1217,7 @@ func TestPort_ToAddr(t *testing.T) {
 
 // Tests for routes.go
 
+// TODO: Rewrite.
 func TestNewRouteGroup(t *testing.T) {
 	router := NewRouter()
 	if router.RouteGroup.prefix != "/" {
