@@ -51,6 +51,7 @@ type Route struct {
 	Methods     []string
 	Path        Path
 	Middlewares []Middleware
+	stringPath    string
 }
 
 //OverlapsWith checks if an Route somehow overlaps with another container. For this to be true, the path and at least one method must equal
@@ -73,14 +74,19 @@ func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...strin
 	if path == "" {
 		path = "/"
 	}
-	if path[0] != '/' {
-		path = "/" + path
+	// if path[0] != '/' {
+	// 	path = "/" + path
+	// }
+	if path[0] == '/' && len(path) > 1 {
+		path = strings.TrimPrefix(path, "/")
+		path = strings.TrimSuffix(path, "/")
+	}
+	if path != "/" {
+		path = group.prefix + path
 	}
 
-	path = group.prefix + path
-
-	if group.Router.routes == nil {
-		group.Router.routes = make([]*Route, 0)
+	if group.base.methodTrees == nil {
+		group.base.methodTrees = make(map[string]methodTree)
 	}
 
 	route := &Route{
@@ -88,8 +94,9 @@ func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...strin
 		methods,
 		ConstructPath(path, false),
 		make([]Middleware, 0),
+		path,
 	}
-	group.routes.AddRoute(route, group.Router)
+	group.base.AddRoute(route)
 
 	return &RouteRouteGroupBuilder{
 		route,
