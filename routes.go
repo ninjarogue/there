@@ -71,15 +71,16 @@ func (e Route) ToString() string {
 }
 
 func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...string) *RouteRouteGroupBuilder {
-	if path == "" {
-		path = "/"
-	}
-	if path[0] == '/' && len(path) > 1 {
-		path = strings.TrimPrefix(path, "/")
-		path = strings.TrimSuffix(path, "/")
-	}
-	if path != "/" {
-		path = group.prefix + path
+	switch {
+		case path == "":
+			path = "/"
+			fallthrough
+		case path[0] == '/' && len(path) > 1:
+			path = strings.TrimPrefix(path, "/")
+			path = strings.TrimSuffix(path, "/")
+			fallthrough
+		case path != "/":
+			path = group.prefix + path
 	}
 
 	if group.base.methodTrees == nil {
