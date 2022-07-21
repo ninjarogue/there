@@ -144,22 +144,6 @@ var httpMethods = map[string]string{
 	"PATCH": "PATCH",
 }
 
-func (group *RouteGroup) GET(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
-	return group.Handle(path, endpoint, MethodGet)
-}
-
-func (group *RouteGroup) POST(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
-	return group.Handle(path, endpoint, MethodPost)
-}
-
-func (group *RouteGroup) PUT(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
-	return group.Handle(path, endpoint, MethodPut)
-}
-
-func (group *RouteGroup) PATCH(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
-	return group.Handle(path, endpoint, MethodPatch)
-}
-
 func (t *methodTree) Insert(r *Route) (any, error) {
 	var parent *node
 	n := t.root
