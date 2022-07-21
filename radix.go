@@ -141,6 +141,7 @@ var httpMethods = map[string]string{
 	"POST": "POST",
 	"DELETE": "DELETE",
 	"PUT": "PUT",
+	"PATCH": "PATCH",
 }
 
 func (group *RouteGroup) GET(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
@@ -149,6 +150,14 @@ func (group *RouteGroup) GET(path string, endpoint Endpoint) *RouteRouteGroupBui
 
 func (group *RouteGroup) POST(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
 	return group.Handle(path, endpoint, MethodPost)
+}
+
+func (group *RouteGroup) PUT(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
+	return group.Handle(path, endpoint, MethodPut)
+}
+
+func (group *RouteGroup) PATCH(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
+	return group.Handle(path, endpoint, MethodPatch)
 }
 
 func (t *methodTree) Insert(r *Route) (any, error) {

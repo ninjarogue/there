@@ -70,6 +70,7 @@ func (e Route) ToString() string {
 	return r
 }
 
+// TODO: How are we handling duplicates?
 func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...string) *RouteRouteGroupBuilder {
 	if path[0] == '/' && len(path) > 1 {
 		path = strings.TrimPrefix(path, "/")
