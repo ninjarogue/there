@@ -2,12 +2,12 @@ package there
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"sort"
 	"strings"
 )
 
-type leafNode struct {
+type route struct {
 	key string
 	Path Path
 	middlewares []Middleware
@@ -38,7 +38,7 @@ func (e edges) Sort() {
 }
 
 type node struct {
-	leaf *leafNode
+	leaf *route
 	prefix string
 	variable bool
 	edges edges
@@ -94,43 +94,68 @@ func (n *node) updateEdge(label byte, node *node) error {
 	return errors.New("replacing missing edge")
 }
 
-type MethodTree struct {
+type methodTree struct {
 	method string
 	root *node
 	size int
 }
 
-func New() *MethodTree {
-	return &MethodTree{root: &node{}}
+type Base struct {
+	methodTrees map[string]methodTree
 }
 
-func (t *MethodTree) GET(s string, ep Endpoint) (*MethodTree, error) {
-	t.method = "GET"
+func (b *Base) AddRoute(r *Route) (*Base, error) {
+	// Return an error if a route method is not a valid http method.
+	for _, m := range r.Methods {
+		m = strings.ToUpper(m)
+		if v, found := httpMethods[m]; !found {
+			return b, errors.New(fmt.Sprintf("invalid http method: %v", v))
+		}
 
-	_, err := t.Insert(s, ep)
+		// If the method tree does not already exist create it.
+		if _, found := b.methodTrees[m]; !found {
+			mt := &methodTree{
+				method: m,
+				root: &node{
+					prefix: "",
+				},
+				size: 0,
+			}
 
-	if err != nil {
-		return t, err
+			mt.Insert(r) // TODO: Handle error.
+			b.methodTrees[m] = *mt
+			continue
+		}
+
+		// If the method tree already exists add the new entry to the tree.
+		t, _ := b.methodTrees[m]
+		t.Insert(r)
 	}
 
-	return t, nil
+	return b, nil
 }
 
-func (t *MethodTree) POST(s string, ep Endpoint) (*MethodTree, error) {
-	t.method = "POST"
-
-	_, err := t.Insert(s, ep)
-
-	if err != nil {
-		return t, err
-	}
-
-	return t, nil
+// TODO: Add more http methods.
+var httpMethods = map[string]string{
+	"GET": "GET",
+	"POST": "POST",
+	"DELETE": "DELETE",
+	"PUT": "PUT",
 }
 
-func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
+func (group *RouteGroup) GET(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
+	return group.Handle(path, endpoint, MethodGet)
+}
+
+func (group *RouteGroup) POST(path string, endpoint Endpoint) *RouteRouteGroupBuilder {
+	return group.Handle(path, endpoint, MethodPost)
+}
+
+func (t *methodTree) Insert(r *Route) (any, error) {
 	var parent *node
 	n := t.root
+
+	s := r.stringPath
 	search := s
 
 	for {
@@ -139,13 +164,13 @@ func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
 		if len(search) == 0 {
 			if n.isLeaf() {
 				old := n.leaf.endpoint
-				n.leaf.endpoint = ep
+				n.leaf.endpoint = r.Endpoint
 				return old, nil
 			}
 
-			n.leaf = &leafNode{
+			n.leaf = &route{
 				key: s,
-				endpoint: ep,
+				endpoint: r.Endpoint,
 			}
 
 			t.size++
@@ -158,12 +183,21 @@ func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
 
 		// No edge? Create one.
 		if n == nil {
+			// Trim the trailing slash (if any), unless the search key is equal to "/".
+			key := s
+			if s != "/" {
+				key = strings.TrimSuffix(s, "/")
+			}
+
 			e := edge {
 				label: search[0],
 				node: &node{
-					leaf: &leafNode{
-						key: s,
-						endpoint: ep,
+					leaf: &route{
+						// FIX: Do we need to include the key field in the route struct?
+						key: key,
+						Path: r.Path,
+						middlewares: r.Middlewares,
+						endpoint: r.Endpoint,
 					},
 					prefix: search,
 				},
@@ -206,9 +240,11 @@ func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
 		n.prefix = n.prefix[commonPrefix:]
 
 		// Create a new leaf node.
-		leaf := &leafNode{
+		leaf := &route{
 			key: s,
-			endpoint: ep,
+			Path: r.Path,
+			middlewares: r.Middlewares,
+			endpoint: r.Endpoint,
 		}
 
 		// If the new key is a subset, add to to this node.
@@ -233,15 +269,17 @@ func (t *MethodTree) Insert(s string, ep Endpoint) (any, error) {
 
 // Get is used to lookup a specific key
 // returning the value if it was found.
-func (t *MethodTree) Get(s string) (Endpoint, bool) {
+func (b *Base) LookUp(method string, s string) (*route, map[string]string, bool) {
+	t := b.methodTrees[method]
 	n := t.root
 	search := s
+	var routeParams map[string]string
 
 	for {
 		// Handle key exhaustion.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				return n.leaf.endpoint, true
+				return n.leaf, routeParams, true
 			}
 			break
 		}
@@ -252,51 +290,32 @@ func (t *MethodTree) Get(s string) (Endpoint, bool) {
 			break
 		}
 
-		// Check to see if the current route segment is a variable
+		// Check to see if the current route segment is a variable.
 		if n.variable {
-			log.Printf("%v", n.leaf.key)
-			// TODO: ...
+			params, ok := n.leaf.Path.Parse(s)
+
+			if routeParams != nil && ok {
+				routeParams = params
+				for _, v := range routeParams {
+					if search[:len(v)] == v {
+						search = search[:len(v)]
+					}
+				}
+				continue
+			}
 		}
 
 		// If we find a match, we truncate
 		// the matching slice and continue the search.
 		if strings.HasPrefix(search, n.prefix) {
-			// Consume the search key.
+			// Consume the current route segment.
 			search = search[len(n.prefix):]
 		} else {
 			break
 		}
 	}
 
-	return nil, false
-}
-
-// TODO: Use the original Parse method.
-func Parse(p Path, route string) (map[string]string, bool) {
-	params := map[string]string{}
-
-	split := splitUrl(route)
-
-	if len(split) != len(p.parts) {
-		return nil, false
-	}
-
-	ignoreCase := p.ignoreCase
-
-	for i := 0; i < len(p.parts); i++ {
-		a := p.parts[i]
-		b := split[i]
-		if a.variable {
-			params[a.value] = b
-		} else {
-			if (ignoreCase && strings.ToLower(a.value) != strings.ToLower(b)) ||
-				(!ignoreCase && a.value != b) {
-				return nil, false
-			}
-		}
-	}
-
-	return params, true
+	return n.leaf, routeParams, false
 }
 
 func longestCommonPrefix(k1, k2 string) int {
