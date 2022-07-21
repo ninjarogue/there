@@ -15,17 +15,16 @@ type pathPart struct {
 }
 
 // ConstructPath returns the path to match.
-func ConstructPath(pathString string, ignoreCase bool) Path {
-	split := splitUrl(pathString)
+func ConstructPath(s string, ignoreCase bool) Path {
+	split := splitUrl(s)
 	parts := make([]pathPart, len(split))
 	for i, s := range split {
 		variable := false
-		const variablePrefix = ":"
-		if strings.HasPrefix(s, variablePrefix) {
-			s = s[len(variablePrefix):]
+		if strings.HasPrefix(s, ":") {
+			s = s[1:]
 			for _, part := range parts {
 				if part.variable && part.value == s {
-					panic(pathString + " has defined the route param \"" + s + "\" more than once")
+					panic(s + " has defined the route param \"" + s + "\" more than once")
 				}
 			}
 			variable = true
