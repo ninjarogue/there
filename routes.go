@@ -74,9 +74,6 @@ func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...strin
 	if path == "" {
 		path = "/"
 	}
-	// if path[0] != '/' {
-	// 	path = "/" + path
-	// }
 	if path[0] == '/' && len(path) > 1 {
 		path = strings.TrimPrefix(path, "/")
 		path = strings.TrimSuffix(path, "/")
