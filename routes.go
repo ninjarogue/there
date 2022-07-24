@@ -94,11 +94,11 @@ func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...strin
 		make([]Middleware, 0),
 		path,
 	}
-	_, nodes, _ := group.base.AddRoute(route)
+	_, endpoints, _ := group.base.AddRoute(route)
 
 	return &RouteRouteGroupBuilder{
 		route,
-		nodes,
+		endpoints,
 		group,
 	}
 }
