@@ -319,7 +319,6 @@ func TestStringResponse(t *testing.T) {
 }
 
 func TestJsonResponse(t *testing.T) {
-
 	router := CreateRouter()
 	var jsonBody map[string]any
 	readJsonBody(router, t, MethodGet, "/data/message", nil, &jsonBody)
