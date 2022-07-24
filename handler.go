@@ -15,10 +15,12 @@ func (router *Router) ServeHTTP(rw http.ResponseWriter, request *http.Request) {
 	// We fetch the route along with the routeParams (if any).
 	r, routeParams, _ := router.base.LookUp(request.Method, request.URL.Path)
 
-	endpoint = r.endpoint
-	middlewares = append(middlewares, r.middlewares...)
-	routeParamReader := RouteParamReader(routeParams)
-	httpRequest.RouteParams = &routeParamReader
+	if r != nil {
+		endpoint = r.endpoint
+		middlewares = append(middlewares, r.middlewares...)
+		routeParamReader := RouteParamReader(routeParams)
+		httpRequest.RouteParams = &routeParamReader
+	}
 
 	if endpoint == nil {
 		endpoint = router.Configuration.RouteNotFoundHandler
