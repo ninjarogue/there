@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type route struct {
+type LeafNode struct {
 	key string
 	Path Path
 	middlewares []Middleware
@@ -16,7 +16,7 @@ type route struct {
 
 type edge struct {
 	label byte
-	node *node
+	node *Node
 }
 
 type edges []edge
@@ -37,25 +37,25 @@ func (e edges) Sort() {
 	sort.Sort(e)
 }
 
-type node struct {
-	leaf *route
+type Node struct {
+	leaf *LeafNode
 	prefix string
 	variable bool
 	edges edges
 }
 
 // Return true if the node is a "leaf node".
-func (n *node) isLeaf() bool {
+func (n *Node) isLeaf() bool {
 	return n.leaf != nil
 }
 
-func (n *node) addEdge(e edge) {
+func (n *Node) addEdge(e edge) {
 	n.edges = append(n.edges, e)
 	n.edges.Sort()
 }
 
 // Returns nil if the edge was not found or else findEdge will return the node corresponding to the edge.
-func (n *node) findEdge(label byte) *node {
+func (n *Node) findEdge(label byte) *edge {
 	num := len(n.edges)
 
 	// Find the index of the matching edge label.
@@ -69,13 +69,13 @@ func (n *node) findEdge(label byte) *node {
 	}
 
 	if idx < num && n.edges[idx].label == label {
-		return n.edges[idx].node
+		return &n.edges[idx]
 	}
 
 	return nil
 }
 
-func (n *node) updateEdge(label byte, node *node) error {
+func (n *Node) updateEdge(label byte, node *Node) error {
 	num := len(n.edges)
 
 	idx := 0
@@ -96,7 +96,7 @@ func (n *node) updateEdge(label byte, node *node) error {
 
 type methodTree struct {
 	method string
-	root *node
+	root *Node
 	size int
 }
 
@@ -104,35 +104,52 @@ type Base struct {
 	methodTrees map[string]methodTree
 }
 
-func (b *Base) AddRoute(r *Route) (*Base, error) {
+func (b *Base) AddRoute(r *Route) (*Base, []*Node, error) {
+	var nodes []*Node
 	// Return an error if a route method is not a valid http method.
 	for _, m := range r.Methods {
 		m = strings.ToUpper(m)
 		if v, found := httpMethods[m]; !found {
-			return b, errors.New(fmt.Sprintf("invalid http method: %v", v))
+			return b, nil, errors.New(fmt.Sprintf("invalid http method: %v", v))
 		}
 
 		// If the method tree does not already exist create it.
 		if _, found := b.methodTrees[m]; !found {
 			mt := &methodTree{
 				method: m,
-				root: &node{
+				root: &Node{
 					prefix: "",
 				},
 				size: 0,
 			}
 
-			mt.Insert(r) // TODO: Handle error.
+			n, _ := mt.Insert(r) // TODO: Handle error.
+			nodes = append(nodes, n)
 			b.methodTrees[m] = *mt
 			continue
 		}
 
 		// If the method tree already exists add the new entry to the tree.
 		t, _ := b.methodTrees[m]
-		t.Insert(r)
+		n, _ := t.Insert(r)
+		nodes = append(nodes, n)
 	}
 
-	return b, nil
+	return b, nodes, nil
+}
+
+// TODO: Incomplete.
+func (b *Base) DeleteRoute(r *Route) (*Base, []*Node, error) {
+	for _, m := range r.Methods {
+		m = strings.ToUpper(m)
+		if v, found := httpMethods[m]; !found {
+			return b, nil, errors.New(fmt.Sprintf("invalid http method: %v", v))
+		}
+	}
+
+	// no-op
+
+	return nil, nil, nil
 }
 
 // TODO: Add more http methods.
@@ -144,10 +161,9 @@ var httpMethods = map[string]string{
 	"PATCH": "PATCH",
 }
 
-func (t *methodTree) Insert(r *Route) (any, error) {
-	var parent *node
+func (t *methodTree) Insert(r *Route) (*Node, error) {
+	var parent *Node
 	n := t.root
-
 	s := r.stringPath
 	search := s
 
@@ -156,23 +172,25 @@ func (t *methodTree) Insert(r *Route) (any, error) {
 		// This code block also allows us to deal with duplicate keys.
 		if len(search) == 0 {
 			if n.isLeaf() {
-				old := n.leaf.endpoint
 				n.leaf.endpoint = r.Endpoint
-				return old, nil
+				return n, nil
 			}
 
-			n.leaf = &route{
+			n.leaf = &LeafNode{
 				key: s,
+				Path: r.Path,
+				middlewares: r.Middlewares,
 				endpoint: r.Endpoint,
 			}
 
 			t.size++
-			return nil, nil
+			return n, nil
 		}
 
 		// Look for the edge.
 		parent = n
-		n = n.findEdge(search[0])
+		e := n.findEdge(search[0])
+		n = e.node
 
 		// No edge? Create one.
 		if n == nil {
@@ -184,9 +202,8 @@ func (t *methodTree) Insert(r *Route) (any, error) {
 
 			e := edge {
 				label: search[0],
-				node: &node{
-					leaf: &route{
-						// FIX: Do we need to include the key field in the route struct?
+				node: &Node{
+					leaf: &LeafNode{
 						key: key,
 						Path: r.Path,
 						middlewares: r.Middlewares,
@@ -198,7 +215,7 @@ func (t *methodTree) Insert(r *Route) (any, error) {
 
 			parent.addEdge(e)
 			t.size++
-			return nil, nil
+			return e.node, nil
 		}
 
 		// Find longest prefix of the search "key" on match.
@@ -213,7 +230,7 @@ func (t *methodTree) Insert(r *Route) (any, error) {
 
 		// Split the node.
 		t.size++
-		child := &node {
+		child := &Node {
 			prefix: search[:commonPrefix],
 		}
 		if strings.HasPrefix(search[:commonPrefix], ":") {
@@ -233,36 +250,71 @@ func (t *methodTree) Insert(r *Route) (any, error) {
 		n.prefix = n.prefix[commonPrefix:]
 
 		// Create a new leaf node.
-		leaf := &route{
+		leaf := &LeafNode{
 			key: s,
 			Path: r.Path,
 			middlewares: r.Middlewares,
 			endpoint: r.Endpoint,
 		}
 
-		// If the new key is a subset, add to to this node.
+		// If the new key is a subset, add to this node.
 		search = search[commonPrefix:]
 		if len(search) == 0 {
 			child.leaf = leaf
-			return nil, nil
+			return child, nil
 		}
 
-		// Create a new edge for the node.
-		child.addEdge(edge{
-			label: search[0],
-			node: &node{
-				leaf: leaf,
-				prefix: search,
-			},
-		})
+		return e.node, nil
+	}
+}
 
-		return nil, nil
+// TODO: Incomplete.
+func (t *methodTree) Delete(r *Route) (string, error) {
+	var parent *Node
+	n := t.root
+	s := r.stringPath
+	search := s
+	var e *edge
+
+	for {
+		// Handle key exhaustion.
+		if len(search) == 0 {
+			// If the node has edges, remove the leaf.
+			if len(n.edges) != 0 {
+				e = parent.findEdge(search[0])
+				e.node.leaf = nil // TODO: Incomplete.
+			}
+
+			if len(n.edges) == 0 {
+				// Remove edge.
+			}
+		}
+
+		// Look for the edge.
+		parent = n
+		e = n.findEdge(search[0]) // NOTE: Returns the edge and not the edge node.
+		n = e.node
+
+		// No edge? Return an empty string.
+		if e == nil {
+			return "", nil
+		}
+
+		// Find longest prefix of the search "key" on match.
+		commonPrefix := longestCommonPrefix(search, n.prefix)
+		// If the prefix matches the commonPrefix we continue traversing the tree.
+		// We reassign "search" to the remaining portion of the last search string
+		// to continue searching for a place to insert.
+		if commonPrefix == len(n.prefix) {
+			search = search[commonPrefix:]
+			continue
+		}
 	}
 }
 
 // Get is used to lookup a specific key
 // returning the value if it was found.
-func (b *Base) LookUp(method string, s string) (*route, map[string]string, bool) {
+func (b *Base) LookUp(method string, s string) (*LeafNode, map[string]string, bool) {
 	t := b.methodTrees[method]
 	n := t.root
 	search := s
@@ -278,7 +330,8 @@ func (b *Base) LookUp(method string, s string) (*route, map[string]string, bool)
 		}
 
 		// Look for an edge
-		n = n.findEdge(search[0])
+		e := n.findEdge(search[0])
+		n = e.node
 		if n == nil {
 			break
 		}
