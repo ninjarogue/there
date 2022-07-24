@@ -94,16 +94,18 @@ func (group *RouteGroup) Handle(path string, endpoint Endpoint, methods ...strin
 		make([]Middleware, 0),
 		path,
 	}
-	group.base.AddRoute(route)
+	_, nodes, _ := group.base.AddRoute(route)
 
 	return &RouteRouteGroupBuilder{
 		route,
+		nodes,
 		group,
 	}
 }
 
 type RouteRouteGroupBuilder struct {
 	*Route
+	endpoints []*Node
 	*RouteGroup
 }
 
@@ -145,7 +147,10 @@ func (group *RouteGroup) Options(route string, endpoint Endpoint) *RouteRouteGro
 
 //With adds a middleware to the handler the method is called on
 func (group *RouteRouteGroupBuilder) With(middleware Middleware) *RouteRouteGroupBuilder {
-	group.Middlewares = append(group.Middlewares, middleware)
+	for _, node := range group.endpoints {
+		node.leaf.middlewares = append(node.leaf.middlewares, middleware)
+	}
+
 	return group
 }
 
