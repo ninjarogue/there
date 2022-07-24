@@ -7,9 +7,9 @@ import (
 func TestRadix(t *testing.T) {
 	r := NewRouter()
 
-	r.GET("foo", nil)
-	r.GET("foo/bar/baz", nil)
-	r.GET("foo/baz/bar", nil)
+	r.Get("foo", nil)
+	r.Get("foo/bar/baz", nil)
+	r.Get("foo/baz/bar", nil)
 
 	// TODO: Test "r".
 }
@@ -18,13 +18,13 @@ func TestUpdateEdge(t *testing.T) {
 	edges := []edge{
 		{
 			label: '/',
-			node: &node{
+			node: &Node{
 				prefix: "/ba",
 				edges: []edge{
 					{
 						label: 'r',
-						node: &node{
-							leaf: &route{
+						node: &Node{
+							leaf: &LeafNode{
 								Path: Path{
 									parts: []pathPart{
 										{value: "foo", variable: false},
@@ -39,8 +39,8 @@ func TestUpdateEdge(t *testing.T) {
 					},
 					{
 						label: 'z',
-						node: &node{
-							leaf: &route{
+						node: &Node{
+							leaf: &LeafNode{
 								Path: Path{
 									parts: []pathPart{
 										{value: "foo", variable: false},
@@ -58,8 +58,8 @@ func TestUpdateEdge(t *testing.T) {
 		},
 	}
 
-	parent := &node{
-		leaf: &route{
+	parent := &Node{
+		leaf: &LeafNode{
 			Path: Path{
 				parts: []pathPart{
 					{value: "foo", variable: false},
@@ -71,7 +71,7 @@ func TestUpdateEdge(t *testing.T) {
 		edges:  edges,
 	}
 
-	child := &node{
+	child := &Node{
 		prefix: "/b",
 	}
 
@@ -85,9 +85,9 @@ func TestGet(t *testing.T) {
 	r := NewRouter()
 
 	dummyHandler := func(r Request) Response { return nil }
-	r.GET("/foo", dummyHandler)
-	r.GET("/foo/bar/baz", dummyHandler)
-	r.GET("/foo/baz/bar", dummyHandler)
+	r.Get("/foo", dummyHandler)
+	r.Get("/foo/bar/baz", dummyHandler)
+	r.Get("/foo/baz/bar", dummyHandler)
 
 	val, _, _ := r.base.LookUp("GET", "/foo")
 	if val == nil {
